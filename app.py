@@ -99,8 +99,8 @@ elif page == "My Profile":
     st.subheader("👤 My Profile")
     with st.form("profile"):
         name = st.text_input("Name", student["name"])
-        cls = st.selectbox("Class", ["10", "12"],
-                           index=0 if student["class_level"] == "10" else 1)
+        cls = st.selectbox("Class", ["9", "10", "11", "12"],
+                   index=["9", "10", "11", "12"].index(student["class_level"]) if student["class_level"] in ["9", "10", "11", "12"] else 3)
         yr = st.text_input("Academic Year", student["academic_year"])
         target = st.number_input("Target %", 0.0, 100.0,
                                  float(student["target_percentage"]))
