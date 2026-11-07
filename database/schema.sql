@@ -2,7 +2,7 @@
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS students (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, class_level TEXT NOT NULL CHECK(class_level IN ('10','12')), board TEXT NOT NULL DEFAULT 'CBSE', academic_year TEXT NOT NULL, target_percentage REAL DEFAULT 90.0, daily_study_hours REAL DEFAULT 6.0, exam_start_date TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, class_level TEXT NOT NULL CHECK(class_level IN ('9','10','11','12')),, board TEXT NOT NULL DEFAULT 'CBSE', academic_year TEXT NOT NULL, target_percentage REAL DEFAULT 90.0, daily_study_hours REAL DEFAULT 6.0, exam_start_date TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, name TEXT NOT NULL, color TEXT DEFAULT '#1e3a8a', FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
