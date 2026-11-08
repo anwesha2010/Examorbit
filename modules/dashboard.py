@@ -1,12 +1,12 @@
 """
 modules/dashboard.py
 --------------------------------------------------
-Ultra Premium Pixel-Perfect Dashboard (Desktop + Mobile)
+Ultra Premium Pixel-Perfect Dashboard (Polished)
 --------------------------------------------------
 """
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from database.db import query
 from modules.student import get_chapters
 
@@ -17,10 +17,12 @@ def render_dashboard(student_id, student):
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
         
-        .block-container { padding: 2rem !important; max-width: 1400px; padding-bottom: 100px !important; }
+        /* Widen the layout to eliminate empty space */
+        .block-container { padding: 2rem 3rem !important; max-width: 1500px !important; padding-bottom: 100px !important; }
         #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
         html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
         
+        /* Mobile Bottom Navigation */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; padding: 12px 0 20px 0; border-top-left-radius: 30px; border-top-right-radius: 30px; border-top: 1px solid #2a2a2a; z-index: 9999; box-shadow: 0 -10px 20px rgba(0,0,0,0.3); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #666; font-size: 11px; gap: 4px; }
         .nav-item.active { color: #d4ff40; }
@@ -29,28 +31,32 @@ def render_dashboard(student_id, student):
         
         @media (min-width: 769px) { .bottom-nav { display: none; } }
 
+        /* Grid System */
         .row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .col-main { flex: 2; min-width: 300px; }
         .col-side { flex: 1.2; min-width: 250px; }
-        .col-4 { flex: 1; min-width: 150px; }
+        .col-5 { flex: 1; min-width: 130px; } /* 5 columns for metrics */
         .row-split { display: flex; gap: 20px; width: 100%; }
         .row-split > div { flex: 1; }
         
         @media (max-width: 768px) {
             .row { flex-direction: column; gap: 15px; }
-            .col-main, .col-side, .col-4 { min-width: 100%; }
+            .col-main, .col-side, .col-5 { min-width: 100%; }
             .huge-number { font-size: 80px !important; }
             .purple-number { font-size: 55px !important; }
             .header-title { font-size: 32px !important; }
-            .row-split { gap: 15px; }
+            .row-split { gap: 15px; flex-wrap: wrap; }
+            .row-split > div { min-width: 45%; } /* Make small cards 2x2 */
             .mobile-hide { display: none !important; }
             .mobile-only { display: block !important; }
             .mobile-order-1 { order: 1; }
             .mobile-order-2 { order: 2; }
+            .block-container { padding: 1rem !important; }
         }
         
         @media (min-width: 769px) { .mobile-only { display: none !important; } }
 
+        /* Cards */
         .card { background-color: #1a1a1a; border-radius: 24px; padding: 24px; position: relative; overflow: hidden; border: 1px solid #2a2a2a; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
         .card-yellow { background: #d4ff40; color: #000; border: none; }
         .card-yellow .badge { background: #000; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; margin-bottom: 15px; letter-spacing: 0.5px; }
@@ -66,15 +72,18 @@ def render_dashboard(student_id, student):
         .circle-progress { fill: none; stroke: #d4ff40; stroke-width: 12; stroke-linecap: round; }
         .circle-text { position: absolute; font-size: 24px; font-weight: 700; color: #fff; }
 
-        .metric-card { background-color: #1a1a1a; border-radius: 20px; padding: 20px; border: 1px solid #2a2a2a; flex: 1; }
-        .metric-value { font-size: 24px; font-weight: 700; margin: 0; }
-        .metric-label { font-size: 13px; color: #888; margin: 0; }
-        .val-orange { color: #fb923c; } .val-blue { color: #38bdf8; } .val-pink { color: #f472b6; } .val-green { color: #d4ff40; }
+        /* Metric Cards (BOLD NUMBERS) */
+        .metric-card { background-color: #1a1a1a; border-radius: 20px; padding: 20px; border: 1px solid #2a2a2a; flex: 1; display: flex; flex-direction: column; }
+        .metric-value { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+        .metric-label { font-size: 13px; color: #888; margin: 0; font-weight: 500; }
+        .val-orange { color: #fb923c; } .val-blue { color: #38bdf8; } .val-pink { color: #f472b6; } .val-green { color: #d4ff40; } .val-purple { color: #c4b5fd; }
 
+        /* Progress bars & Hints */
         .progress-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; width: 100%; margin-top: 8px; overflow: hidden; }
         .progress-bar-fill { height: 100%; border-radius: 4px; }
         .list-item { margin-bottom: 18px; }
         .list-header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #fff; }
+        .last-studied { font-size: 11px; color: #666; margin-top: 4px; display: block; }
         
         .task-row { display: flex; justify-content: space-between; align-items: center; background: #222; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         .task-row-left { display: flex; align-items: center; gap: 15px; }
@@ -87,26 +96,44 @@ def render_dashboard(student_id, student):
         
         .start-btn { background: #d4ff40; color: #000; text-align: center; padding: 16px; border-radius: 16px; font-weight: 700; margin-top: 20px; cursor: pointer; }
         .open-tracker { color: #d4ff40; font-size: 14px; font-weight: 600; cursor: pointer; }
+        
+        /* Insight Hint Box */
+        .hint-box { background: rgba(212, 255, 64, 0.1); border-left: 4px solid #d4ff40; padding: 16px; border-radius: 12px; margin-top: 20px; color: #d4ff40; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 10px; }
         </style>
     """, unsafe_allow_html=True)
 
+    # --- Data Fetching ---
     today = date.today().isoformat()
     chapters = get_chapters(student_id=student_id)
     total_ch = len(chapters)
     exam_ready = sum(1 for c in chapters if c["status"] == "Exam Ready")
     avg_pct = (round(sum(c["completion_pct"] for c in chapters) / total_ch, 1) if total_ch else 0)
     days_left = (datetime.strptime(student["exam_start_date"], "%Y-%m-%d").date() - date.today()).days if student.get("exam_start_date") else "—"
+    
     tasks = query("SELECT t.*, s.name as subject_name FROM timetable_tasks t LEFT JOIN subjects s ON t.subject_id = s.id WHERE t.student_id=? AND t.task_date=?", (student_id, today))
     done = sum(1 for t in tasks if t["status"] == "Completed")
+    
     tests = query("SELECT * FROM test_records WHERE student_id=?", (student_id,))
     avg_score = (round(sum(t["marks_obtained"] / t["max_marks"] * 100 for t in tests) / len(tests), 1) if tests else 0)
+    
     revs = query("SELECT r.* FROM revision_records r JOIN chapters c ON r.chapter_id=c.id JOIN subjects s ON c.subject_id=s.id WHERE s.student_id=?", (student_id,))
     rev_pct = round(sum(1 for r in revs if r["status"] == "Completed") / len(revs) * 100, 1) if revs else 0
+    
     hours = query("SELECT COALESCE(SUM(duration_minutes),0)/60.0 AS h FROM timetable_tasks WHERE student_id=? AND status='Completed'", (student_id,), one=True)["h"]
 
     circ = 2 * 3.14159 * 40
     offset = circ - (avg_pct / 100) * circ
 
+    # --- Smart Hint Logic ---
+    hint_text = "You're on track! Keep stacking chapters."
+    if chapters:
+        df = pd.DataFrame(chapters)
+        subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
+        weakest = subj_avg.sort_values(by="completion_pct", ascending=True).iloc[0]
+        if weakest["completion_pct"] < 50:
+            hint_text = f"{weakest['subject_name']} is behind at {weakest['completion_pct']:.0f}% — do a 30-minute session today."
+
+    # --- HTML Components ---
     header_html = (
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">'
         f'<div><p style="color: #888; margin: 0; font-size: 14px;">{datetime.today().strftime("%A, %d %B")}</p>'
@@ -143,22 +170,38 @@ def render_dashboard(student_id, student):
         f'</div></div></div>'
     )
 
+    # 5 Metric Cards now included
     row2_html = (
         f'<div class="row">'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #fb923c; background: #2a1a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #38bdf8; background: #0c1a2a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready chapters</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #f472b6; background: #2a0c1a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #d4ff40; background: #1a2a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
+        f'<div class="metric-card col-5"><span class="material-symbols-rounded" style="color: #fb923c; background: #2a1a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
+        f'<div class="metric-card col-5"><span class="material-symbols-rounded" style="color: #38bdf8; background: #0c1a2a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready</p></div>'
+        f'<div class="metric-card col-5"><span class="material-symbols-rounded" style="color: #f472b6; background: #2a0c1a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
+        f'<div class="metric-card col-5"><span class="material-symbols-rounded" style="color: #d4ff40; background: #1a2a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
+        f'<div class="metric-card col-5"><span class="material-symbols-rounded" style="color: #c4b5fd; background: #1a0c2a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">science</span><p class="metric-value val-purple">{len(tests)}</p><p class="metric-label">Tests taken</p></div>'
         f'</div>'
     )
 
+    # Subject Mastery with Last Studied logic
     subj_html = ""
     if chapters:
         df = pd.DataFrame(chapters)
         subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
         colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
         for i, row in subj_avg.iterrows():
-            subj_html += f'<div class="list-item"><div class="list-header"><span>{row["subject_name"]}</span><span>{row["completion_pct"]:.0f}%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row["completion_pct"]}%; background: {colors[i % len(colors)]};"></div></div></div>'
+            # Fetch latest study session for this subject
+            last_session = query("SELECT session_date FROM study_sessions WHERE student_id=? AND subject_id=(SELECT id FROM subjects WHERE name=?) ORDER BY session_date DESC LIMIT 1", (student_id, row["subject_name"]), one=True)
+            # Fallback to timetable tasks if no session recorded
+            if not last_session:
+                last_session = query("SELECT task_date as session_date FROM timetable_tasks WHERE student_id=? AND subject_id=(SELECT id FROM subjects WHERE name=?) AND status='Completed' ORDER BY task_date DESC LIMIT 1", (student_id, row["subject_name"]), one=True)
+            
+            last_studied_text = "Not studied yet"
+            if last_session and last_session["session_date"]:
+                delta = (date.today() - datetime.strptime(last_session["session_date"], "%Y-%m-%d").date()).days
+                if delta == 0: last_studied_text = "Studied today"
+                elif delta == 1: last_studied_text = "Studied yesterday"
+                else: last_studied_text = f"Last studied {delta} days ago"
+
+            subj_html += f'<div class="list-item"><div class="list-header"><span>{row["subject_name"]}</span><span>{row["completion_pct"]:.0f}%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row["completion_pct"]}%; background: {colors[i % len(colors)]};"></div></div><span class="last-studied">{last_studied_text}</span></div>'
 
     tasks_html = ""
     if tasks:
@@ -173,6 +216,7 @@ def render_dashboard(student_id, student):
         f'<div class="card col-main mobile-order-2">'
         f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3 style="margin:0; color: #fff;">Subject mastery</h3><span class="open-tracker">Open tracker</span></div>'
         f'{subj_html}'
+        f'<div class="hint-box"><span class="material-symbols-rounded">lightbulb</span> {hint_text}</div>' # The Smart Hint
         f'</div>'
         f'<div class="card col-side mobile-order-1">'
         f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3 style="margin:0; color: #fff;">Today\'s focus</h3><span style="color: #888; font-size: 13px; background: #2a2a2a; padding: 4px 10px; border-radius: 10px;">{done} of {len(tasks)} done</span></div>'
@@ -193,6 +237,5 @@ def render_dashboard(student_id, student):
         f'</div>'
     )
 
-    # THE FIX: We remove indentation from the final string by chaining and then rendering it
     full_html = header_html + row1_html + row2_html + row3_html + bottom_nav_html
     st.markdown(full_html, unsafe_allow_html=True)
