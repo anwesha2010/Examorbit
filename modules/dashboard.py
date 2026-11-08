@@ -1,7 +1,7 @@
 """
 modules/dashboard.py
 --------------------------------------------------
-Ultra Premium Pixel-Perfect Dashboard (Desktop + Mobile)
+Ultra Premium Dashboard (Desktop + Mobile)
 --------------------------------------------------
 """
 import streamlit as st
@@ -11,71 +11,34 @@ from database.db import query
 from modules.student import get_chapters
 
 def render_dashboard(student_id, student):
-    # --- 1. Custom CSS (Hides Streamlit Sidebar, Builds Custom Grid) ---
+    # --- 1. Custom CSS (Responsive UI) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
         
-        /* Hide Streamlit Defaults */
-        [data-testid="collapsedControl"] { display: none !important; }
-        [data-testid="stSidebar"] { display: none !important; }
-        .block-container { padding: 0 !important; max-width: 100% !important; }
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-        html, body, [class*="css"] { font-family: 'Outfit', sans-serif; background-color: #0e0e0e; }
-
-        /* --- LAYOUT WRAPPERS --- */
-        .app-container { display: flex; min-height: 100vh; }
+        /* Hide Streamlit default padding */
+        .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; max-width: 1200px; }
         
-        /* --- CUSTOM SIDEBAR --- */
-        .custom-sidebar {
-            width: 260px; background: #0e0e0e; border-right: 1px solid #1f1f1f;
-            padding: 30px 20px; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100;
-        }
-        .logo-box { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
-        .logo-icon { background: #d4ff40; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #000; font-size: 20px; }
-        .logo-text { color: #fff; font-weight: 700; font-size: 20px; line-height: 1; }
-        .logo-sub { color: #888; font-size: 11px; line-height: 1; margin-top: 4px; }
-        
-        .nav-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-        .nav-item { display: flex; align-items: center; gap: 15px; padding: 12px 16px; border-radius: 12px; color: #888; font-weight: 500; font-size: 14px; text-decoration: none; cursor: pointer; transition: 0.2s; }
-        .nav-item:hover { background: #1a1a1a; color: #fff; }
-        .nav-item.active { background: #d4ff40; color: #000; font-weight: 600; }
-        .nav-item.active .material-symbols-rounded { color: #000; }
+        html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
 
-        /* Focus Mode (Sidebar Bottom) */
-        .focus-mode { margin-top: auto; background: #1a1a1a; border-radius: 16px; padding: 20px; border: 1px solid #2a2a2a; }
-        .focus-mode h4 { color: #fff; margin: 0 0 5px 0; font-size: 14px; }
-        .focus-mode p { color: #888; font-size: 12px; margin: 0 0 15px 0; line-height: 1.4; }
-        .focus-btn { background: transparent; border: 1px solid #555; color: #fff; width: 100%; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-
-        /* --- MAIN CONTENT AREA --- */
-        .main-content { margin-left: 260px; flex: 1; padding: 40px; max-width: 1200px; }
-
-        /* Top Header (Search & Avatar) */
+        /* Top Header */
         .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .search-bar { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 300px; color: #888; }
-        .search-bar input { background: transparent; border: none; outline: none; color: #fff; font-family: 'Outfit'; font-size: 14px; width: 100%; }
+        .date-text { color: #888; margin: 0; font-size: 14px; }
+        .page-title { color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1; }
         .header-right { display: flex; align-items: center; gap: 15px; }
+        .search-bar { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 250px; color: #888; }
         .icon-btn { background: #1a1a1a; border: 1px solid #2a2a2a; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
         .avatar { background: #c4b5fd; color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; }
 
-        /* Titles */
-        .date-text { color: #888; margin: 0; font-size: 14px; }
-        .page-title { color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1; }
-
-        /* --- GRID SYSTEM (Desktop) --- */
+        /* Grid System */
         .row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .col-main { flex: 2; min-width: 300px; }
         .col-side { flex: 1.2; min-width: 250px; }
-        .col-4 { flex: 1; min-width: 150px; }
-        .split-2 { display: flex; gap: 20px; width: 100%; }
-        .split-2 > div { flex: 1; }
-
-        /* --- CARDS --- */
-        .card { background-color: #1a1a1a; border-radius: 24px; padding: 24px; position: relative; overflow: hidden; border: 1px solid #2a2a2a; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+        .col-4 { flex: 1; min-width: 140px; }
         
-        /* Specific Cards */
+        /* Cards */
+        .card { background-color: #1a1a1a; border-radius: 24px; padding: 24px; position: relative; overflow: hidden; border: 1px solid #2a2a2a; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
         .card-yellow { background: #d4ff40; color: #000; border: none; }
         .card-yellow .badge { background: #000; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; margin-bottom: 15px; letter-spacing: 0.5px; }
         .huge-number { font-size: 110px; font-weight: 800; line-height: 0.9; letter-spacing: -2px; }
@@ -96,6 +59,7 @@ def render_dashboard(student_id, student):
         .metric-value { font-size: 24px; font-weight: 700; margin: 0; }
         .metric-label { font-size: 13px; color: #888; margin: 0; }
         .val-orange { color: #fb923c; } .val-blue { color: #38bdf8; } .val-pink { color: #f472b6; } .val-green { color: #d4ff40; }
+        .icon-box { padding: 8px; border-radius: 10px; margin-bottom: 15px; display: inline-block; }
 
         /* Lists & Tasks */
         .progress-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; width: 100%; margin-top: 8px; overflow: hidden; }
@@ -115,33 +79,22 @@ def render_dashboard(student_id, student):
         .start-btn { background: #d4ff40; color: #000; text-align: center; padding: 16px; border-radius: 16px; font-weight: 700; margin-top: 20px; cursor: pointer; }
         .open-tracker { color: #d4ff40; font-size: 14px; font-weight: 600; cursor: pointer; }
 
-        /* --- MOBILE BOTTOM NAV --- */
+        /* Mobile Bottom Nav */
         .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; justify-content: space-around; padding: 15px 0 25px 0; border-top-left-radius: 30px; border-top-right-radius: 30px; border-top: 1px solid #2a2a2a; z-index: 9999; }
         .nav-icon-mobile { display: flex; flex-direction: column; align-items: center; color: #666; font-size: 11px; gap: 4px; }
         .nav-icon-mobile.active { color: #d4ff40; }
         .nav-icon-mobile.active .material-symbols-rounded { background: #d4ff40; color: #000; border-radius: 12px; padding: 4px 16px; }
 
-        /* --- RESPONSIVE MEDIA QUERIES --- */
+        /* Responsive */
         @media (max-width: 900px) {
-            /* Hide Sidebar & Adjust Main */
-            .custom-sidebar { display: none; }
-            .main-content { margin-left: 0; padding: 20px 20px 100px 20px; }
-            .top-header .search-bar { display: none; } /* Hide search on mobile */
-            
-            /* Stack Grids */
             .row { flex-direction: column; gap: 15px; }
             .col-main, .col-side, .col-4 { min-width: 100%; }
-            .split-2 { flex-direction: row; gap: 15px; } /* Keep small cards side-by-side */
-            
-            /* Adjust Text Sizes */
             .page-title { font-size: 32px; }
             .huge-number { font-size: 80px; }
             .purple-number { font-size: 55px; }
-            
-            /* Show Bottom Nav */
             .bottom-nav { display: flex; }
-            
-            /* Reorder Desktop Layout for Mobile (Focus before Mastery) */
+            .mobile-hide { display: none !important; }
+            /* Reorder Focus before Mastery on mobile */
             .mobile-order-1 { order: 1; }
             .mobile-order-2 { order: 2; }
         }
@@ -155,10 +108,13 @@ def render_dashboard(student_id, student):
     exam_ready = sum(1 for c in chapters if c["status"] == "Exam Ready")
     avg_pct = (round(sum(c["completion_pct"] for c in chapters) / total_ch, 1) if total_ch else 0)
     days_left = (datetime.strptime(student["exam_start_date"], "%Y-%m-%d").date() - date.today()).days if student.get("exam_start_date") else "—"
+    
     tasks = query("SELECT t.*, s.name as subject_name FROM timetable_tasks t LEFT JOIN subjects s ON t.subject_id = s.id WHERE t.student_id=? AND t.task_date=?", (student_id, today))
     done = sum(1 for t in tasks if t["status"] == "Completed")
+    
     tests = query("SELECT * FROM test_records WHERE student_id=?", (student_id,))
     avg_score = (round(sum(t["marks_obtained"] / t["max_marks"] * 100 for t in tests) / len(tests), 1) if tests else 0)
+    
     revs = query("SELECT r.* FROM revision_records r JOIN chapters c ON r.chapter_id=c.id JOIN subjects s ON c.subject_id=s.id WHERE s.student_id=?", (student_id,))
     rev_pct = round(sum(1 for r in revs if r["status"] == "Completed") / len(revs) * 100, 1) if revs else 0
     hours = query("SELECT COALESCE(SUM(duration_minutes),0)/60.0 AS h FROM timetable_tasks WHERE student_id=? AND status='Completed'", (student_id,), one=True)["h"]
@@ -167,7 +123,7 @@ def render_dashboard(student_id, student):
     circ = 2 * 3.14159 * 40
     offset = circ - (avg_pct / 100) * circ
 
-    # --- Generate HTML Strings ---
+    # --- Generate HTML Blocks ---
     
     # Subjects
     subj_html = ""
@@ -187,33 +143,13 @@ def render_dashboard(student_id, student):
     else:
         tasks_html = "<p style='color:#888;'>No tasks scheduled.</p>"
 
-    # --- Assemble Full HTML Layout ---
+    # --- Assemble Layout ---
     
-    # 1. Sidebar
-    sidebar_html = (
-        f'<div class="custom-sidebar">'
-        f'<div class="logo-box"><div class="logo-icon">EO</div><div><div class="logo-text">ExamOrbit</div><div class="logo-sub">Plan Smart. Track daily.</div></div></div>'
-        f'<ul class="nav-list">'
-        f'<li class="nav-item active"><span class="material-symbols-rounded">grid_view</span> Dashboard</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">calendar_month</span> My Timetable</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">menu_book</span> Subjects & Chapters</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">autorenew</span> Revision</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">edit_document</span> Tests</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">monitoring</span> Analytics</li>'
-        f'<li class="nav-item"><span class="material-symbols-rounded">person</span> My Profile</li>'
-        f'</ul>'
-        f'<div class="focus-mode"><h4>Focus mode</h4><p>Mute the noise and run a timed study sprint.</p><div class="focus-btn">Start a sprint</div></div>'
-        f'</div>'
-    )
-
-    # 2. Top Header
+    # 1. Top Header
     header_html = (
         f'<div class="top-header">'
-        f'<div>'
-        f'<p class="date-text">{datetime.today().strftime("%A, %d %B")}</p>'
-        f'<h1 class="page-title">hey {student["name"]}, let\'s lock in.</h1>'
-        f'</div>'
-        f'<div class="header-right">'
+        f'<div><p class="date-text">{datetime.today().strftime("%A, %d %B")}</p><h1 class="page-title">hey {student["name"]}, let\'s lock in.</h1></div>'
+        f'<div class="header-right mobile-hide">'
         f'<div class="search-bar"><span class="material-symbols-rounded">search</span><input type="text" placeholder="Search chapters"></div>'
         f'<div class="icon-btn"><span class="material-symbols-rounded">notifications</span></div>'
         f'<div class="avatar">{student["name"][0].upper()}</div>'
@@ -221,7 +157,7 @@ def render_dashboard(student_id, student):
         f'</div>'
     )
 
-    # 3. Row 1 (Countdown + Syllabus + Test)
+    # 2. Row 1 (Countdown + Syllabus + Test)
     row1_html = (
         f'<div class="row">'
         # Countdown
@@ -247,17 +183,17 @@ def render_dashboard(student_id, student):
         f'</div>'
     )
 
-    # 4. Row 2 (4 Metrics)
+    # 3. Row 2 (4 Metrics)
     row2_html = (
         f'<div class="row">'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #fb923c; background: #2a1a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #38bdf8; background: #0c1a2a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready chapters</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #f472b6; background: #2a0c1a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #d4ff40; background: #1a2a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #fb923c; background: #2a1a0c;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #38bdf8; background: #0c1a2a;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready chapters</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #f472b6; background: #2a0c1a;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #d4ff40; background: #1a2a0c;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
         f'</div>'
     )
 
-    # 5. Row 3 (Mastery + Focus) - Uses flex to swap order on mobile via CSS
+    # 4. Row 3 (Mastery + Focus)
     row3_html = (
         f'<div class="row">'
         
@@ -278,7 +214,7 @@ def render_dashboard(student_id, student):
         f'</div>'
     )
 
-    # 6. Mobile Bottom Nav
+    # 5. Mobile Bottom Nav
     bottom_nav_html = (
         f'<div class="bottom-nav">'
         f'<div class="nav-icon-mobile active"><span class="material-symbols-rounded">grid_view</span></div>'
@@ -289,18 +225,6 @@ def render_dashboard(student_id, student):
         f'</div>'
     )
 
-    # Combine into final layout
-    full_html = (
-        f'<div class="app-container">'
-        f'{sidebar_html}'
-        f'<div class="main-content">'
-        f'{header_html}'
-        f'{row1_html}'
-        f'{row2_html}'
-        f'{row3_html}'
-        f'</div>'
-        f'{bottom_nav_html}'
-        f'</div>'
-    )
-
+    # Render everything
+    full_html = header_html + row1_html + row2_html + row3_html + bottom_nav_html
     st.markdown(full_html, unsafe_allow_html=True)
