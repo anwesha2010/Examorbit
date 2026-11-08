@@ -207,54 +207,53 @@ def render_dashboard(student_id, student):
         colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
         for i, row in subj_avg.iterrows():
             color = colors[i % len(colors)]
-            subj_html += f"""
-                <div class="list-item">
-                    <div class="list-header"><span>{row['subject_name']}</span><span>{row['completion_pct']:.0f}%</span></div>
-                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row['completion_pct']}%; background: {color};"></div></div>
-                </div>
-            """
+            # Using string concatenation to avoid indentation issues
+            subj_html += (
+                f'<div class="list-item">'
+                f'<div class="list-header"><span>{row["subject_name"]}</span><span>{row["completion_pct"]:.0f}%</span></div>'
+                f'<div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row["completion_pct"]}%; background: {color};"></div></div>'
+                f'</div>'
+            )
             
     # 2. Generate Today's Focus HTML
     tasks_html = ""
     if tasks:
         for t in tasks:
             prio_class = "priority-med" if t['priority'] == "Medium" else "priority-low"
-            tasks_html += f"""
-                <div class="task-row">
-                    <div class="task-row-left">
-                        <div class="task-checkbox"></div>
-                        <div class="task-info">
-                            <h4>{t['subject_name'] or 'General'}</h4>
-                            <p>{t['start_time']} – {t['end_time']}</p>
-                        </div>
-                    </div>
-                    <div class="priority {prio_class}">{t['priority']} priority</div>
-                </div>
-            """
+            tasks_html += (
+                f'<div class="task-row">'
+                f'<div class="task-row-left">'
+                f'<div class="task-checkbox"></div>'
+                f'<div class="task-info">'
+                f'<h4>{t["subject_name"] or "General"}</h4>'
+                f'<p>{t["start_time"]} – {t["end_time"]}</p>'
+                f'</div></div>'
+                f'<div class="priority {prio_class}">{t["priority"]} priority</div>'
+                f'</div>'
+            )
     else:
         tasks_html = "<p style='color:#888;'>No tasks scheduled.</p>"
 
-    # 3. Combine them into the final layout
-    st.markdown(f"""
-        <div style="display: flex; gap: 20px; align-items: stretch;">
-            <!-- Left: Subject Mastery -->
-            <div class="card" style="flex: 1.5; min-height: 400px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <h3 style="margin:0; color: #fff;">Subject mastery</h3>
-                    <span class="open-tracker">Open tracker</span>
-                </div>
-                {subj_html}
-            </div>
-            
-            <!-- Right: Today's Focus -->
-            <div class="card" style="flex: 1; min-height: 400px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <h3 style="margin:0; color: #fff;">Today's focus</h3>
-                    <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{done} of {len(tasks)} done</span>
-                </div>
-                {tasks_html}
-                <div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 10px;">+ Add a study block</div>
-                <div class="start-btn">▶ Start next session</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    # 3. Combine them into the final layout (All on one line to prevent Markdown blocks)
+    final_html = (
+        f'<div style="display: flex; gap: 20px; align-items: stretch;">'
+        f'<div class="card" style="flex: 1.5; min-height: 400px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">'
+        f'<h3 style="margin:0; color: #fff;">Subject mastery</h3>'
+        f'<span class="open-tracker">Open tracker</span>'
+        f'</div>'
+        f'{subj_html}'
+        f'</div>'
+        f'<div class="card" style="flex: 1; min-height: 400px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">'
+        f'<h3 style="margin:0; color: #fff;">Today\'s focus</h3>'
+        f'<span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{done} of {len(tasks)} done</span>'
+        f'</div>'
+        f'{tasks_html}'
+        f'<div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 10px;">+ Add a study block</div>'
+        f'<div class="start-btn">▶ Start next session</div>'
+        f'</div>'
+        f'</div>'
+    )
+    
+    st.markdown(final_html, unsafe_allow_html=True)
