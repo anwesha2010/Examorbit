@@ -23,26 +23,6 @@ def render_dashboard(student_id, student):
 
         html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
         
-        /* Custom Grid Layout */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1.5fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .sub-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .small-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
         /* Base Card Style */
         .card {
             background-color: #1a1a1a;
@@ -155,8 +135,7 @@ def render_dashboard(student_id, student):
         </div>
     """, unsafe_allow_html=True)
 
-    # --- Main Grid ---
-    # We use columns in Streamlit to create the exact layout, but style them via CSS
+    # --- Main Grid (3 Columns) ---
     col1, col2, col3 = st.columns([2, 1.2, 1.2])
     
     with col1:
@@ -175,7 +154,6 @@ def render_dashboard(student_id, student):
         """, unsafe_allow_html=True)
         
     with col2:
-        # SVG Circular Progress logic
         circumference = 2 * 3.14159 * 40
         offset = circumference - (avg_pct / 100) * circumference
         st.markdown(f"""
@@ -206,7 +184,7 @@ def render_dashboard(student_id, student):
 
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-    # --- Small Metrics Row ---
+    # --- Small Metrics Row (4 Columns) ---
     s1, s2, s3, s4 = st.columns(4)
     with s1:
         st.markdown(f"""<div class="metric-card"><div class="metric-icon">⏱</div><p class="metric-value">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>""", unsafe_allow_html=True)
@@ -219,50 +197,64 @@ def render_dashboard(student_id, student):
 
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-    # --- Bottom Grid (Subject Mastery + Today's Focus) ---
-    b1, b2 = st.columns([1.5, 1])
+    # --- Bottom Section (Rendered as ONE Single Block) ---
     
-    with b1:
-        st.markdown("""<div class="card" style="min-height: 400px;">""", unsafe_allow_html=True)
-        st.markdown("""<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;"><h3 style="margin:0; color: #fff;">Subject mastery</h3><span class="open-tracker">Open tracker</span></div>""", unsafe_allow_html=True)
-        
-        if chapters:
-            df = pd.DataFrame(chapters)
-            subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
-            colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
+    # 1. Generate Subject Mastery HTML
+    subj_html = ""
+    if chapters:
+        df = pd.DataFrame(chapters)
+        subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
+        colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
+        for i, row in subj_avg.iterrows():
+            color = colors[i % len(colors)]
+            subj_html += f"""
+                <div class="list-item">
+                    <div class="list-header"><span>{row['subject_name']}</span><span>{row['completion_pct']:.0f}%</span></div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row['completion_pct']}%; background: {color};"></div></div>
+                </div>
+            """
             
-            for i, row in subj_avg.iterrows():
-                color = colors[i % len(colors)]
-                st.markdown(f"""
-                    <div class="list-item">
-                        <div class="list-header"><span>{row['subject_name']}</span><span>{row['completion_pct']:.0f}%</span></div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row['completion_pct']}%; background: {color};"></div></div>
-                    </div>
-                """, unsafe_allow_html=True)
-        st.markdown("""</div>""", unsafe_allow_html=True)
-
-    with b2:
-        st.markdown("""<div class="card" style="min-height: 400px;">""", unsafe_allow_html=True)
-        st.markdown(f"""<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;"><h3 style="margin:0; color: #fff;">Today's focus</h3><span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{done} of {len(tasks)} done</span></div>""", unsafe_allow_html=True)
-        
-        if tasks:
-            for t in tasks:
-                prio_class = "priority-med" if t['priority'] == "Medium" else "priority-low"
-                st.markdown(f"""
-                    <div class="task-row">
-                        <div class="task-row-left">
-                            <div class="task-checkbox"></div>
-                            <div class="task-info">
-                                <h4>{t['subject_name'] or 'General'}</h4>
-                                <p>{t['start_time']} – {t['end_time']}</p>
-                            </div>
+    # 2. Generate Today's Focus HTML
+    tasks_html = ""
+    if tasks:
+        for t in tasks:
+            prio_class = "priority-med" if t['priority'] == "Medium" else "priority-low"
+            tasks_html += f"""
+                <div class="task-row">
+                    <div class="task-row-left">
+                        <div class="task-checkbox"></div>
+                        <div class="task-info">
+                            <h4>{t['subject_name'] or 'General'}</h4>
+                            <p>{t['start_time']} – {t['end_time']}</p>
                         </div>
-                        <div class="priority {prio_class}">{t['priority']} priority</div>
                     </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown("<p style='color:#888;'>No tasks scheduled.</p>", unsafe_allow_html=True)
+                    <div class="priority {prio_class}">{t['priority']} priority</div>
+                </div>
+            """
+    else:
+        tasks_html = "<p style='color:#888;'>No tasks scheduled.</p>"
+
+    # 3. Combine them into the final layout
+    st.markdown(f"""
+        <div style="display: flex; gap: 20px; align-items: stretch;">
+            <!-- Left: Subject Mastery -->
+            <div class="card" style="flex: 1.5; min-height: 400px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h3 style="margin:0; color: #fff;">Subject mastery</h3>
+                    <span class="open-tracker">Open tracker</span>
+                </div>
+                {subj_html}
+            </div>
             
-        st.markdown("""<div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 10px;">+ Add a study block</div>""", unsafe_allow_html=True)
-        st.markdown("""<div class="start-btn">▶ Start next session</div>""", unsafe_allow_html=True)
-        st.markdown("""</div>""", unsafe_allow_html=True)
+            <!-- Right: Today's Focus -->
+            <div class="card" style="flex: 1; min-height: 400px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h3 style="margin:0; color: #fff;">Today's focus</h3>
+                    <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 20px; font-size: 12px;">{done} of {len(tasks)} done</span>
+                </div>
+                {tasks_html}
+                <div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 10px;">+ Add a study block</div>
+                <div class="start-btn">▶ Start next session</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
