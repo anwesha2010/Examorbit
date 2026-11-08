@@ -1,7 +1,7 @@
 """
 modules/dashboard.py
 --------------------------------------------------
-Ultra Premium Dashboard (Desktop + Mobile)
+Ultra Premium Pixel-Perfect Dashboard (Desktop + Mobile)
 --------------------------------------------------
 """
 import streamlit as st
@@ -11,36 +11,68 @@ from database.db import query
 from modules.student import get_chapters
 
 def render_dashboard(student_id, student):
-    # --- 1. Custom CSS (Responsive UI) ---
+    # --- 1. Custom CSS (Mobile-first layout, hides Streamlit default padding) ---
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
         
-        /* Hide Streamlit default padding */
-        .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; max-width: 1200px; }
-        
+        /* Hide Streamlit default padding and header */
+        .block-container { padding: 2rem !important; max-width: 1400px; padding-bottom: 100px !important; }
+        #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+
         html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
+        
+        /* --- Mobile Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a;
+            display: flex; justify-content: space-around; padding: 12px 0 20px 0;
+            border-top-left-radius: 30px; border-top-right-radius: 30px;
+            border-top: 1px solid #2a2a2a; z-index: 9999;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #666; font-size: 11px; gap: 4px; }
+        .nav-item.active { color: #d4ff40; }
+        .nav-item.active .material-symbols-rounded { background: #d4ff40; color: #000; border-radius: 12px; padding: 4px 16px; }
+        .material-symbols-rounded { font-size: 24px; }
+        
+        /* Hide bottom nav on desktop */
+        @media (min-width: 769px) { .bottom-nav { display: none; } }
 
-        /* Top Header */
-        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .date-text { color: #888; margin: 0; font-size: 14px; }
-        .page-title { color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        .search-bar { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 250px; color: #888; }
-        .icon-btn { background: #1a1a1a; border: 1px solid #2a2a2a; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
-        .avatar { background: #c4b5fd; color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; }
-
-        /* Grid System */
+        /* --- Grid System --- */
         .row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .col-main { flex: 2; min-width: 300px; }
         .col-side { flex: 1.2; min-width: 250px; }
-        .col-4 { flex: 1; min-width: 140px; }
+        .col-4 { flex: 1; min-width: 150px; }
         
-        /* Cards */
-        .card { background-color: #1a1a1a; border-radius: 24px; padding: 24px; position: relative; overflow: hidden; border: 1px solid #2a2a2a; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+        /* Mobile Stacking */
+        @media (max-width: 768px) {
+            .row { flex-direction: column; gap: 15px; }
+            .col-main, .col-side, .col-4 { min-width: 100%; }
+            .huge-number { font-size: 80px !important; }
+            .purple-number { font-size: 55px !important; }
+            .header-title { font-size: 32px !important; }
+            .mobile-hide { display: none !important; }
+            .row-split { display: flex; gap: 15px; width: 100%; }
+            .row-split > div { flex: 1; min-width: 0; }
+            
+            /* Reorder to match mobile design (Today's focus before Subject Mastery) */
+            .mobile-order-1 { order: 1; }
+            .mobile-order-2 { order: 2; }
+        }
+
+        /* --- Cards --- */
+        .card {
+            background-color: #1a1a1a; border-radius: 24px; padding: 24px;
+            position: relative; overflow: hidden; border: 1px solid #2a2a2a;
+            display: flex; flex-direction: column; justify-content: space-between;
+            height: 100%;
+        }
         .card-yellow { background: #d4ff40; color: #000; border: none; }
-        .card-yellow .badge { background: #000; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; margin-bottom: 15px; letter-spacing: 0.5px; }
+        .card-yellow .badge {
+            background: #000; color: #fff; padding: 4px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; display: inline-block; margin-bottom: 15px; letter-spacing: 0.5px;
+        }
         .huge-number { font-size: 110px; font-weight: 800; line-height: 0.9; letter-spacing: -2px; }
         
         .card-purple { background: #c4b5fd; color: #000; border: none; }
@@ -59,7 +91,6 @@ def render_dashboard(student_id, student):
         .metric-value { font-size: 24px; font-weight: 700; margin: 0; }
         .metric-label { font-size: 13px; color: #888; margin: 0; }
         .val-orange { color: #fb923c; } .val-blue { color: #38bdf8; } .val-pink { color: #f472b6; } .val-green { color: #d4ff40; }
-        .icon-box { padding: 8px; border-radius: 10px; margin-bottom: 15px; display: inline-block; }
 
         /* Lists & Tasks */
         .progress-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; width: 100%; margin-top: 8px; overflow: hidden; }
@@ -78,26 +109,6 @@ def render_dashboard(student_id, student):
         
         .start-btn { background: #d4ff40; color: #000; text-align: center; padding: 16px; border-radius: 16px; font-weight: 700; margin-top: 20px; cursor: pointer; }
         .open-tracker { color: #d4ff40; font-size: 14px; font-weight: 600; cursor: pointer; }
-
-        /* Mobile Bottom Nav */
-        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; justify-content: space-around; padding: 15px 0 25px 0; border-top-left-radius: 30px; border-top-right-radius: 30px; border-top: 1px solid #2a2a2a; z-index: 9999; }
-        .nav-icon-mobile { display: flex; flex-direction: column; align-items: center; color: #666; font-size: 11px; gap: 4px; }
-        .nav-icon-mobile.active { color: #d4ff40; }
-        .nav-icon-mobile.active .material-symbols-rounded { background: #d4ff40; color: #000; border-radius: 12px; padding: 4px 16px; }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .row { flex-direction: column; gap: 15px; }
-            .col-main, .col-side, .col-4 { min-width: 100%; }
-            .page-title { font-size: 32px; }
-            .huge-number { font-size: 80px; }
-            .purple-number { font-size: 55px; }
-            .bottom-nav { display: flex; }
-            .mobile-hide { display: none !important; }
-            /* Reorder Focus before Mastery on mobile */
-            .mobile-order-1 { order: 1; }
-            .mobile-order-2 { order: 2; }
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -108,13 +119,10 @@ def render_dashboard(student_id, student):
     exam_ready = sum(1 for c in chapters if c["status"] == "Exam Ready")
     avg_pct = (round(sum(c["completion_pct"] for c in chapters) / total_ch, 1) if total_ch else 0)
     days_left = (datetime.strptime(student["exam_start_date"], "%Y-%m-%d").date() - date.today()).days if student.get("exam_start_date") else "—"
-    
     tasks = query("SELECT t.*, s.name as subject_name FROM timetable_tasks t LEFT JOIN subjects s ON t.subject_id = s.id WHERE t.student_id=? AND t.task_date=?", (student_id, today))
     done = sum(1 for t in tasks if t["status"] == "Completed")
-    
     tests = query("SELECT * FROM test_records WHERE student_id=?", (student_id,))
     avg_score = (round(sum(t["marks_obtained"] / t["max_marks"] * 100 for t in tests) / len(tests), 1) if tests else 0)
-    
     revs = query("SELECT r.* FROM revision_records r JOIN chapters c ON r.chapter_id=c.id JOIN subjects s ON c.subject_id=s.id WHERE s.student_id=?", (student_id,))
     rev_pct = round(sum(1 for r in revs if r["status"] == "Completed") / len(revs) * 100, 1) if revs else 0
     hours = query("SELECT COALESCE(SUM(duration_minutes),0)/60.0 AS h FROM timetable_tasks WHERE student_id=? AND status='Completed'", (student_id,), one=True)["h"]
@@ -123,41 +131,26 @@ def render_dashboard(student_id, student):
     circ = 2 * 3.14159 * 40
     offset = circ - (avg_pct / 100) * circ
 
-    # --- Generate HTML Blocks ---
+    # --- Build HTML Components ---
     
-    # Subjects
-    subj_html = ""
-    if chapters:
-        df = pd.DataFrame(chapters)
-        subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
-        colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
-        for i, row in subj_avg.iterrows():
-            subj_html += f'<div class="list-item"><div class="list-header"><span>{row["subject_name"]}</span><span>{row["completion_pct"]:.0f}%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row["completion_pct"]}%; background: {colors[i % len(colors)]};"></div></div></div>'
-
-    # Tasks
-    tasks_html = ""
-    if tasks:
-        for t in tasks:
-            prio_class = "priority-med" if t['priority'] == "Medium" else "priority-low"
-            tasks_html += f'<div class="task-row"><div class="task-row-left"><div class="task-checkbox"></div><div class="task-info"><h4>{t["subject_name"] or "General"}</h4><p>{t["start_time"]} – {t["end_time"]} <span class="priority {prio_class}">{t["priority"]}</span></p></div></div></div>'
-    else:
-        tasks_html = "<p style='color:#888;'>No tasks scheduled.</p>"
-
-    # --- Assemble Layout ---
-    
-    # 1. Top Header
+    # 1. Top Header (With Search Bar & Avatar for Desktop)
     header_html = (
-        f'<div class="top-header">'
-        f'<div><p class="date-text">{datetime.today().strftime("%A, %d %B")}</p><h1 class="page-title">hey {student["name"]}, let\'s lock in.</h1></div>'
-        f'<div class="header-right mobile-hide">'
-        f'<div class="search-bar"><span class="material-symbols-rounded">search</span><input type="text" placeholder="Search chapters"></div>'
-        f'<div class="icon-btn"><span class="material-symbols-rounded">notifications</span></div>'
-        f'<div class="avatar">{student["name"][0].upper()}</div>'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">'
+        f'<div><p style="color: #888; margin: 0; font-size: 14px;">{datetime.today().strftime("%A, %d %B")}</p>'
+        f'<h1 class="header-title" style="color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1;">hey {student["name"]}, let\'s lock in.</h1></div>'
+        f'<div class="mobile-hide" style="display: flex; align-items: center; gap: 15px;">'
+        f'<div style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 250px; color: #888;">'
+        f'<span class="material-symbols-rounded" style="font-size: 20px;">search</span><input type="text" placeholder="Search chapters" style="background: transparent; border: none; outline: none; color: #fff; font-family: Outfit; font-size: 14px; width: 100%;"></div>'
+        f'<div style="background: #1a1a1a; border: 1px solid #2a2a2a; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer;"><span class="material-symbols-rounded" style="font-size: 20px;">notifications</span></div>'
+        f'<div style="background: #c4b5fd; color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">{student["name"][0].upper()}</div>'
+        f'</div>'
+        f'<div style="display: flex; gap: 10px;" class="mobile-show">'
+        f'<div style="background: #c4b5fd; color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">{student["name"][0].upper()}</div>'
         f'</div>'
         f'</div>'
     )
 
-    # 2. Row 1 (Countdown + Syllabus + Test)
+    # 2. Row 1: Countdown, Syllabus, Test Average
     row1_html = (
         f'<div class="row">'
         # Countdown
@@ -168,35 +161,56 @@ def render_dashboard(student_id, student):
         f'<div style="position: absolute; right: -50px; bottom: -50px; opacity: 0.15;"><svg width="250" height="250" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="black" stroke-width="2"/><circle cx="50" cy="50" r="35" fill="none" stroke="black" stroke-width="2"/></svg></div>'
         f'</div>'
         
+        # Wrapper for the two small cards (Syllabus and Test)
+        f'<div class="col-side">'
+        f'<div class="row-split">'
         # Syllabus
-        f'<div class="card col-side" style="align-items: center; justify-content: center;">'
-        f'<p style="color: #888; font-size: 14px; margin: 0 0 10px 0; width: 100%; text-align: left;">Syllabus done</p>'
+        f'<div class="card" style="align-items: center; justify-content: center; padding: 20px;">'
+        f'<p style="color: #888; font-size: 14px; margin: 0 0 10px 0; width: 100%; text-align: left;">Syllabus</p>'
         f'<div class="circle-wrap"><svg width="120" height="120"><circle class="circle-bg" cx="60" cy="60" r="40"></circle><circle class="circle-progress" cx="60" cy="60" r="40" stroke-dasharray="{circ}" stroke-dashoffset="{offset}"></circle></svg><div class="circle-text">{avg_pct}%</div></div>'
-        f'<p style="color: #888; font-size: 13px; margin-top: 10px;">Keep stacking chapters</p>'
         f'</div>'
         
         # Test Average
-        f'<div class="card card-purple col-side" style="justify-content: space-between;">'
-        f'<div><p style="font-size: 14px; font-weight: 600; margin: 0;">Test average</p><div class="purple-number">{avg_score:.0f}%</div><p style="font-size: 14px; margin: 5px 0 0 0; font-weight: 500;">across {len(tests)} test taken</p></div>'
-        f'<div class="btn-black">Take a mock test</div>'
+        f'<div class="card card-purple" style="justify-content: space-between; padding: 20px;">'
+        f'<div><p style="font-size: 14px; font-weight: 600; margin: 0;">Test average</p><div class="purple-number">{avg_score:.0f}%</div><p style="font-size: 14px; margin: 5px 0 0 0; font-weight: 500;">across {len(tests)} test</p></div>'
+        f'<div class="btn-black mobile-hide">Take a mock test</div>'
+        f'</div>'
+        f'</div>'
         f'</div>'
         f'</div>'
     )
 
-    # 3. Row 2 (4 Metrics)
+    # 3. Row 2: Small Metrics (4 columns on desktop, 2x2 on mobile via flex wrap)
     row2_html = (
         f'<div class="row">'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #fb923c; background: #2a1a0c;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #38bdf8; background: #0c1a2a;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready chapters</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #f472b6; background: #2a0c1a;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
-        f'<div class="metric-card col-4"><span class="material-symbols-rounded icon-box" style="color: #d4ff40; background: #1a2a0c;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #fb923c; background: #2a1a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">timer</span><p class="metric-value val-orange">{hours:.1f} h</p><p class="metric-label">Hours studied</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #38bdf8; background: #0c1a2a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">menu_book</span><p class="metric-value val-blue">{exam_ready}/{total_ch}</p><p class="metric-label">Exam-ready chapters</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #f472b6; background: #2a0c1a; padding: 8px; border-radius: 10px; margin-bottom: 15px;">autorenew</span><p class="metric-value val-pink">{rev_pct}%</p><p class="metric-label">Revision done</p></div>'
+        f'<div class="metric-card col-4"><span class="material-symbols-rounded" style="color: #d4ff40; background: #1a2a0c; padding: 8px; border-radius: 10px; margin-bottom: 15px;">check_box</span><p class="metric-value val-green">{done}/{len(tasks)}</p><p class="metric-label">Tasks today</p></div>'
         f'</div>'
     )
 
-    # 4. Row 3 (Mastery + Focus)
+    # 4. Generate Subject Mastery HTML
+    subj_html = ""
+    if chapters:
+        df = pd.DataFrame(chapters)
+        subj_avg = df.groupby("subject_name")["completion_pct"].mean().reset_index()
+        colors = ['#f472b6', '#d4ff40', '#38bdf8', '#fb923c', '#a78bfa']
+        for i, row in subj_avg.iterrows():
+            subj_html += f'<div class="list-item"><div class="list-header"><span>{row["subject_name"]}</span><span>{row["completion_pct"]:.0f}%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: {row["completion_pct"]}%; background: {colors[i % len(colors)]};"></div></div></div>'
+
+    # 5. Generate Today's Focus HTML
+    tasks_html = ""
+    if tasks:
+        for t in tasks:
+            prio_class = "priority-med" if t['priority'] == "Medium" else "priority-low"
+            tasks_html += f'<div class="task-row"><div class="task-row-left"><div class="task-checkbox"></div><div class="task-info"><h4>{t["subject_name"] or "General"}</h4><p>{t["start_time"]} – {t["end_time"]} <span class="priority {prio_class}">{t["priority"]}</span></p></div></div></div>'
+    else:
+        tasks_html = "<p style='color:#888;'>No tasks scheduled.</p>"
+
+    # 6. Row 3: Mastery + Focus (Reordered for mobile using CSS classes)
     row3_html = (
         f'<div class="row">'
-        
         # Subject Mastery
         f'<div class="card col-main mobile-order-2">'
         f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3 style="margin:0; color: #fff;">Subject mastery</h3><span class="open-tracker">Open tracker</span></div>'
@@ -210,21 +224,29 @@ def render_dashboard(student_id, student):
         f'<div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 15px;">+ Add a study block</div>'
         f'<div class="start-btn">▶ Start next session</div>'
         f'</div>'
-        
         f'</div>'
     )
 
-    # 5. Mobile Bottom Nav
+    # 7. Mobile Bottom Nav
     bottom_nav_html = (
         f'<div class="bottom-nav">'
-        f'<div class="nav-icon-mobile active"><span class="material-symbols-rounded">grid_view</span></div>'
-        f'<div class="nav-icon-mobile"><span class="material-symbols-rounded">calendar_month</span></div>'
-        f'<div class="nav-icon-mobile"><span class="material-symbols-rounded">menu_book</span></div>'
-        f'<div class="nav-icon-mobile"><span class="material-symbols-rounded">check_box</span></div>'
-        f'<div class="nav-icon-mobile"><span class="material-symbols-rounded">monitoring</span></div>'
+        f'<div class="nav-item active"><span class="material-symbols-rounded">grid_view</span></div>'
+        f'<div class="nav-item"><span class="material-symbols-rounded">calendar_month</span></div>'
+        f'<div class="nav-item"><span class="material-symbols-rounded">menu_book</span></div>'
+        f'<div class="nav-item"><span class="material-symbols-rounded">check_box</span></div>'
+        f'<div class="nav-item"><span class="material-symbols-rounded">monitoring</span></div>'
         f'</div>'
     )
 
-    # Render everything
-    full_html = header_html + row1_html + row2_html + row3_html + bottom_nav_html
+    # --- Assemble and Render ---
+    # (Note: No custom sidebar here, since app.py handles it natively now)
+    
+    full_html = (
+        header_html + 
+        row1_html + 
+        row2_html + 
+        row3_html + 
+        bottom_nav_html
+    )
+
     st.markdown(full_html, unsafe_allow_html=True)
