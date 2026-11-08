@@ -12,7 +12,7 @@ from modules.revision import render_revision_manager
 from modules.tests import render_test_manager
 from modules.analytics import render_analytics
 
-st.set_page_config(page_title="ExamOrbit", page_icon="📘", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="ExamOrbit", page_icon="📘", layout="wide", initial_sidebar_state="expanded")
 
 # Inject custom CSS to style the Streamlit radio buttons to look like our custom sidebar
 st.markdown("""
