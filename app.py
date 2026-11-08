@@ -1,6 +1,3 @@
-"""
-app.py — ExamOrbit main entry point.
-"""
 import streamlit as st
 from datetime import date
 from database.db import init_db
@@ -15,18 +12,100 @@ from modules.revision import render_revision_manager
 from modules.tests import render_test_manager
 from modules.analytics import render_analytics
 
-st.set_page_config(page_title="ExamOrbit", page_icon="📘", layout="wide")
+st.set_page_config(page_title="ExamOrbit", page_icon="📘", layout="wide", initial_sidebar_state="collapsed")
+
+# Inject custom CSS to style the Streamlit radio buttons to look like our custom sidebar
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
+    
+    /* Hide Streamlit Header/Menu */
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+    html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
+
+    /* Style the Sidebar to match design */
+    [data-testid="stSidebar"] {
+        background-color: #0e0e0e;
+        border-right: 1px solid #1f1f1f;
+        width: 280px !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 2rem;
+    }
+    
+    /* Hide the default radio button circles */
+    [data-testid="stSidebar"] [data-baseweb="radio"] > div:first-child {
+        display: none;
+    }
+    
+    /* Style the radio button labels to look like nav items */
+    [data-testid="stSidebar"] label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: #888 !important;
+        font-weight: 500;
+        font-size: 15px;
+        cursor: pointer;
+        transition: 0.2s;
+        margin-bottom: 2px;
+    }
+    [data-testid="stSidebar"] label:hover {
+        background: #1a1a1a;
+        color: #fff !important;
+    }
+    
+    /* Style the ACTIVE radio button */
+    [data-testid="stSidebar"] label[data-checked="true"] {
+        background: #d4ff40 !important;
+        color: #000 !important;
+        font-weight: 700;
+    }
+    [data-testid="stSidebar"] label[data-checked="true"] p {
+        color: #000 !important;
+    }
+
+    /* Hide the empty space below the radio buttons */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.5rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 init_db()
 
-# Sidebar
-st.sidebar.title("📘 ExamOrbit")
-st.sidebar.caption("Plan Smart. Track Daily. Score Better.")
+# Custom Sidebar Header
+st.sidebar.markdown(
+    """
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
+        <div style="background: #d4ff40; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #000; font-size: 20px;">EO</div>
+        <div>
+            <div style="color: #fff; font-weight: 700; font-size: 20px; line-height: 1;">ExamOrbit</div>
+            <div style="color: #888; font-size: 11px; line-height: 1; margin-top: 4px;">Plan Smart. Track daily.</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True
+)
 
-page = st.sidebar.radio("Navigate", [
-    "Dashboard", "My Timetable", "Subject & Chapter Tracker",
-    "Revision Manager", "Test Manager", "Performance Analytics",
-    "My Profile",
+# The actual functional navigation
+page = st.sidebar.radio("Navigation", [
+    "Dashboard", "My Timetable", "Subjects & Chapters",
+    "Revision", "Tests", "Analytics", "My Profile"
 ])
+
+# Custom Sidebar Footer
+st.sidebar.markdown(
+    """
+    <div style="margin-top: 40px; background: #1a1a1a; border-radius: 16px; padding: 20px; border: 1px solid #2a2a2a;">
+        <h4 style="color: #fff; margin: 0 0 5px 0; font-size: 14px;">Focus mode</h4>
+        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0; line-height: 1.4;">Mute the noise and run a timed study sprint.</p>
+        <button style="background: transparent; border: 1px solid #555; color: #fff; width: 100%; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Start a sprint</button>
+    </div>
+    """, unsafe_allow_html=True
+)
 
 student = get_student()
 if not student:
@@ -83,16 +162,16 @@ elif page == "My Timetable":
         for s in suggest_slots(student["id"]):
             st.caption(f"{s['date']}: ~{s['free_hours']}h free")
 
-elif page == "Subject & Chapter Tracker":
+elif page == "Subjects & Chapters":
     render_chapter_tracker(student["id"])
 
-elif page == "Revision Manager":
+elif page == "Revision":
     render_revision_manager(student["id"])
 
-elif page == "Test Manager":
+elif page == "Tests":
     render_test_manager(student["id"])
 
-elif page == "Performance Analytics":
+elif page == "Analytics":
     render_analytics(student["id"])
 
 elif page == "My Profile":
@@ -100,7 +179,7 @@ elif page == "My Profile":
     with st.form("profile"):
         name = st.text_input("Name", student["name"])
         cls = st.selectbox("Class", ["9", "10", "11", "12"],
-                   index=["9", "10", "11", "12"].index(student["class_level"]) if student["class_level"] in ["9", "10", "11", "12"] else 3)
+                           index=["9", "10", "11", "12"].index(student["class_level"]) if student["class_level"] in ["9", "10", "11", "12"] else 3)
         yr = st.text_input("Academic Year", student["academic_year"])
         target = st.number_input("Target %", 0.0, 100.0,
                                  float(student["target_percentage"]))
