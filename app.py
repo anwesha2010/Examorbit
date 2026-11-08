@@ -18,13 +18,12 @@ st.set_page_config(page_title="ExamOrbit", page_icon="📘", layout="wide", init
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
     
     /* Hide Streamlit Header/Menu */
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     html, body, [class*="css"] { font-family: 'Outfit', sans-serif; }
 
-    /* Style the Sidebar to match design */
+    /* Style the Sidebar container */
     [data-testid="stSidebar"] {
         background-color: #0e0e0e;
         border-right: 1px solid #1f1f1f;
@@ -34,9 +33,12 @@ st.markdown("""
         padding-top: 2rem;
     }
     
-    /* Hide the default radio button circles */
+    /* Hide the default radio button circles completely */
     [data-testid="stSidebar"] [data-baseweb="radio"] > div:first-child {
-        display: none;
+        display: none !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="radio"] > div:last-child {
+        padding-left: 0 !important;
     }
     
     /* Style the radio button labels to look like nav items */
@@ -52,13 +54,14 @@ st.markdown("""
         cursor: pointer;
         transition: 0.2s;
         margin-bottom: 2px;
+        background: transparent;
     }
     [data-testid="stSidebar"] label:hover {
         background: #1a1a1a;
         color: #fff !important;
     }
     
-    /* Style the ACTIVE radio button */
+    /* Style the ACTIVE radio button (The Lime Pill) */
     [data-testid="stSidebar"] label[data-checked="true"] {
         background: #d4ff40 !important;
         color: #000 !important;
