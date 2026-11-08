@@ -103,7 +103,7 @@ def render_dashboard(student_id, student):
     header_html = f'''
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
         <div><p style="color: #888; margin: 0; font-size: 14px;">{datetime.today().strftime("%A, %d %B")}</p>
-        <h1 class="header-title" style="color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1;">hey {student["name"]}, let\\'s lock in.</h1></div>
+        <h1 class="header-title" style="color: #fff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.1;">hey {student["name"]}, let&#39;s lock in.</h1></div>
         <div style="display: flex; gap: 15px; align-items: center;">
             <div style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 200px; color: #888;">
                 <span class="material-symbols-rounded" style="font-size: 20px;">search</span><input type="text" placeholder="Search chapters" style="background: transparent; border: none; outline: none; color: #fff; width: 100%;">
@@ -213,7 +213,7 @@ def render_dashboard(student_id, student):
             </div>
         </div>
         <div class="card col-side">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3 style="margin:0; color: #fff;">Today\\'s focus</h3><span style="color: #888; font-size: 13px; background: #2a2a2a; padding: 4px 10px; border-radius: 10px;">{done} of {len(tasks)} done</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h3 style="margin:0; color: #fff;">Today&#39;s focus</h3><span style="color: #888; font-size: 13px; background: #2a2a2a; padding: 4px 10px; border-radius: 10px;">{done} of {len(tasks)} done</span></div>
             {tasks_html}
             <div style="border: 1px dashed #444; border-radius: 12px; padding: 15px; text-align: center; color: #888; font-size: 14px; margin-top: 15px;">+ Add a study block</div>
             <div class="start-btn">▶ Start next session</div>
