@@ -126,7 +126,7 @@ def render_dashboard(student_id, student):
         except Exception:
             pass
 
-    tasks = query("SELECT * FROM timetable_tasks WHERE student_id=? AND task_date=?", (student_id, today))
+    tasks = query("""SELECT t.*, s.name as subject_name FROM timetable_tasks t LEFT JOIN subjects s ON t.subject_id = s.id WHERE t.student_id=? AND t.task_date=?""", (student_id, today))
     done = sum(1 for t in tasks if t["status"] == "Completed")
 
     tests = query("SELECT * FROM test_records WHERE student_id=?", (student_id,))
